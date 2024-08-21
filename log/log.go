@@ -3,6 +3,7 @@ package log
 import (
 	"io"
 	"os"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"go.uber.org/atomic"
@@ -45,19 +46,16 @@ func Fatalf(format string, args ...any) {
 }
 
 func logf(level Level, format string, args ...any) {
-	event := newEvent(level, format, args...)
-	if uint32(event.Level) > _defaultLevel.Load() {
-		return
-	}
-
 	switch level {
 	case DebugLevel:
-		logrus.WithTime(event.Time).Debugln(event.Message)
+		logrus.WithTime(time.Now()).Debugf(format, args...)
 	case InfoLevel:
-		logrus.WithTime(event.Time).Infoln(event.Message)
+		logrus.WithTime(time.Now()).Infof(format, args...)
 	case WarnLevel:
-		logrus.WithTime(event.Time).Warnln(event.Message)
+		logrus.WithTime(time.Now()).Warnf(format, args...)
 	case ErrorLevel:
-		logrus.WithTime(event.Time).Errorln(event.Message)
+		logrus.WithTime(time.Now()).Errorf(format, args...)
+	default:
+		// nop
 	}
 }
