@@ -42,7 +42,7 @@ func (f *FD) Name() string {
 
 func (f *FD) Close() {
 	defer f.LinkEndpoint.Close()
-	_ = unix.Close(f.fd)
+	// _ = unix.Close(f.fd)
 }
 
 var _ device.Device = (*FD)(nil)
