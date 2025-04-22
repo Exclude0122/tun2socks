@@ -1,4 +1,4 @@
-package proxy
+package socks5
 
 import (
 	"context"
@@ -6,17 +6,19 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/url"
 
 	"github.com/xjasonlyu/tun2socks/v2/dialer"
 	M "github.com/xjasonlyu/tun2socks/v2/metadata"
-	"github.com/xjasonlyu/tun2socks/v2/proxy/proto"
+	"github.com/xjasonlyu/tun2socks/v2/proxy"
+	"github.com/xjasonlyu/tun2socks/v2/proxy/base"
 	"github.com/xjasonlyu/tun2socks/v2/transport/socks5"
 )
 
-var _ Proxy = (*Socks5)(nil)
+const Proto = "socks5"
 
 type Socks5 struct {
-	*Base
+	*base.Base
 
 	user string
 	pass string
@@ -34,10 +36,7 @@ func NewSocks5(addr, user, pass string) (*Socks5, error) {
 	}
 
 	return &Socks5{
-		Base: &Base{
-			addr:  addr,
-			proto: proto.Socks5,
-		},
+		Base: base.New(addr, Proto),
 		user: user,
 		pass: pass,
 		unix: unix,
@@ -54,10 +53,10 @@ func (ss *Socks5) DialContext(ctx context.Context, metadata *M.Metadata) (c net.
 	if err != nil {
 		return nil, fmt.Errorf("connect to %s: %w", ss.Addr(), err)
 	}
-	setKeepAlive(c)
+	base.SetKeepAlive(c)
 
 	defer func(c net.Conn) {
-		safeConnClose(c, err)
+		base.SafeConnClose(c, err)
 	}(c)
 
 	var user *socks5.User
@@ -68,7 +67,7 @@ func (ss *Socks5) DialContext(ctx context.Context, metadata *M.Metadata) (c net.
 		}
 	}
 
-	_, err = socks5.ClientHandshake(c, serializeSocksAddr(metadata), socks5.CmdConnect, user)
+	_, err = socks5.ClientHandshake(c, base.SerializeSocksAddr(metadata), socks5.CmdConnect, user)
 	return
 }
 
@@ -77,7 +76,7 @@ func (ss *Socks5) DialUDP(*M.Metadata) (_ net.PacketConn, err error) {
 		return nil, fmt.Errorf("%w when unix domain socket is enabled", errors.ErrUnsupported)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), tcpConnectTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), base.TcpConnectTimeout)
 	defer cancel()
 
 	c, err := dialer.DialContext(ctx, "tcp", ss.Addr())
@@ -85,7 +84,7 @@ func (ss *Socks5) DialUDP(*M.Metadata) (_ net.PacketConn, err error) {
 		err = fmt.Errorf("connect to %s: %w", ss.Addr(), err)
 		return
 	}
-	setKeepAlive(c)
+	base.SetKeepAlive(c)
 
 	defer func() {
 		if err != nil && c != nil {
@@ -155,7 +154,7 @@ type socksPacketConn struct {
 func (pc *socksPacketConn) WriteTo(b []byte, addr net.Addr) (n int, err error) {
 	var packet []byte
 	if ma, ok := addr.(*M.Addr); ok {
-		packet, err = socks5.EncodeUDPPacket(serializeSocksAddr(ma.Metadata()), b)
+		packet, err = socks5.EncodeUDPPacket(base.SerializeSocksAddr(ma.Metadata()), b)
 	} else {
 		packet, err = socks5.EncodeUDPPacket(socks5.ParseAddr(addr), b)
 	}
@@ -192,6 +191,17 @@ func (pc *socksPacketConn) Close() error {
 	return pc.PacketConn.Close()
 }
 
-func serializeSocksAddr(m *M.Metadata) socks5.Addr {
-	return socks5.SerializeAddr("", m.DstIP, m.DstPort)
+func parseSocks5(u *url.URL) (base.Proxy, error) {
+	address, username := u.Host, u.User.Username()
+	password, _ := u.User.Password()
+
+	// Socks5 over UDS
+	if address == "" {
+		address = u.Path
+	}
+	return NewSocks5(address, username, password)
+}
+
+func init() {
+	proxy.RegisterProtocol(Proto, parseSocks5)
 }

@@ -1,4 +1,4 @@
-package proxy
+package base
 
 import (
 	"context"
@@ -9,19 +9,17 @@ import (
 	"github.com/xjasonlyu/tun2socks/v2/proxy/proto"
 )
 
-var _ Proxy = (*Base)(nil)
-
 type Base struct {
-	addr  string
-	proto proto.Proto
+	address  string
+	protocol string
 }
 
 func (b *Base) Addr() string {
-	return b.addr
+	return b.address
 }
 
 func (b *Base) Proto() proto.Proto {
-	return b.proto
+	return proto.Proto(b.protocol)
 }
 
 func (b *Base) DialContext(context.Context, *M.Metadata) (net.Conn, error) {
@@ -30,4 +28,11 @@ func (b *Base) DialContext(context.Context, *M.Metadata) (net.Conn, error) {
 
 func (b *Base) DialUDP(*M.Metadata) (net.PacketConn, error) {
 	return nil, errors.ErrUnsupported
+}
+
+func New(address, protocol string) *Base {
+	return &Base{
+		address:  address,
+		protocol: protocol,
+	}
 }

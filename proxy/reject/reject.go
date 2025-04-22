@@ -1,4 +1,4 @@
-package proxy
+package reject
 
 import (
 	"context"
@@ -7,20 +7,18 @@ import (
 	"time"
 
 	M "github.com/xjasonlyu/tun2socks/v2/metadata"
-	"github.com/xjasonlyu/tun2socks/v2/proxy/proto"
+	"github.com/xjasonlyu/tun2socks/v2/proxy/base"
 )
 
-var _ Proxy = (*Reject)(nil)
+const Proto = "reject"
 
 type Reject struct {
-	*Base
+	*base.Base
 }
 
 func NewReject() *Reject {
 	return &Reject{
-		Base: &Base{
-			proto: proto.Reject,
-		},
+		Base: base.New("", Proto),
 	}
 }
 

@@ -1,4 +1,4 @@
-package proxy
+package direct
 
 import (
 	"context"
@@ -6,20 +6,18 @@ import (
 
 	"github.com/xjasonlyu/tun2socks/v2/dialer"
 	M "github.com/xjasonlyu/tun2socks/v2/metadata"
-	"github.com/xjasonlyu/tun2socks/v2/proxy/proto"
+	"github.com/xjasonlyu/tun2socks/v2/proxy/base"
 )
 
-var _ Proxy = (*Direct)(nil)
+const Proto = "direct"
 
 type Direct struct {
-	*Base
+	*base.Base
 }
 
 func NewDirect() *Direct {
 	return &Direct{
-		Base: &Base{
-			proto: proto.Direct,
-		},
+		Base: base.New("", Proto),
 	}
 }
 
@@ -28,7 +26,7 @@ func (d *Direct) DialContext(ctx context.Context, metadata *M.Metadata) (net.Con
 	if err != nil {
 		return nil, err
 	}
-	setKeepAlive(c)
+	base.SetKeepAlive(c)
 	return c, nil
 }
 

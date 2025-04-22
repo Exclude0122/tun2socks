@@ -19,6 +19,7 @@ import (
 	"github.com/xjasonlyu/tun2socks/v2/dialer"
 	"github.com/xjasonlyu/tun2socks/v2/log"
 	"github.com/xjasonlyu/tun2socks/v2/proxy"
+	"github.com/xjasonlyu/tun2socks/v2/proxy/base"
 	"github.com/xjasonlyu/tun2socks/v2/restapi"
 	"github.com/xjasonlyu/tun2socks/v2/tunnel"
 )
@@ -30,7 +31,7 @@ var (
 	_defaultKey *Key
 
 	// _defaultProxy holds the default proxy for the engine.
-	_defaultProxy proxy.Proxy
+	_defaultProxy base.Proxy
 
 	// _defaultDevice holds the default device for the engine.
 	_defaultDevice device.Device
@@ -190,7 +191,7 @@ func netstack(k *Key) (err error) {
 		}
 	}()
 
-	if _defaultProxy, err = parseProxy(k.Proxy); err != nil {
+	if _defaultProxy, err = proxy.Parse(k.Proxy); err != nil {
 		return
 	}
 	tunnel.T().SetDialer(_defaultProxy)

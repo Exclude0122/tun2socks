@@ -8,7 +8,7 @@ import (
 	"go.uber.org/atomic"
 
 	"github.com/xjasonlyu/tun2socks/v2/core/adapter"
-	"github.com/xjasonlyu/tun2socks/v2/proxy"
+	"github.com/xjasonlyu/tun2socks/v2/proxy/base"
 	"github.com/xjasonlyu/tun2socks/v2/tunnel/statistic"
 )
 
@@ -33,7 +33,7 @@ type Tunnel struct {
 
 	// Internal proxy.Dialer for Tunnel.
 	dialerMu sync.RWMutex
-	dialer   proxy.Dialer
+	dialer   base.Dialer
 
 	// Where the Tunnel statistics are sent to.
 	manager *statistic.Manager
@@ -42,7 +42,7 @@ type Tunnel struct {
 	procCancel context.CancelFunc
 }
 
-func New(dialer proxy.Dialer, manager *statistic.Manager) *Tunnel {
+func New(dialer base.Dialer, manager *statistic.Manager) *Tunnel {
 	return &Tunnel{
 		tcpQueue:   make(chan adapter.TCPConn),
 		udpQueue:   make(chan adapter.UDPConn),
@@ -98,14 +98,14 @@ func (t *Tunnel) Close() {
 	t.procCancel()
 }
 
-func (t *Tunnel) Dialer() proxy.Dialer {
+func (t *Tunnel) Dialer() base.Dialer {
 	t.dialerMu.RLock()
 	d := t.dialer
 	t.dialerMu.RUnlock()
 	return d
 }
 
-func (t *Tunnel) SetDialer(dialer proxy.Dialer) {
+func (t *Tunnel) SetDialer(dialer base.Dialer) {
 	t.dialerMu.Lock()
 	t.dialer = dialer
 	t.dialerMu.Unlock()

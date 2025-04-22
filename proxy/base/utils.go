@@ -1,8 +1,11 @@
-package proxy
+package base
 
 import (
 	"net"
 	"time"
+
+	M "github.com/xjasonlyu/tun2socks/v2/metadata"
+	"github.com/xjasonlyu/tun2socks/v2/transport/socks5"
 )
 
 const (
@@ -10,7 +13,7 @@ const (
 )
 
 // setKeepAlive sets tcp keepalive option for tcp connection.
-func setKeepAlive(c net.Conn) {
+func SetKeepAlive(c net.Conn) {
 	if tcp, ok := c.(*net.TCPConn); ok {
 		tcp.SetKeepAlive(true)
 		tcp.SetKeepAlivePeriod(tcpKeepAlivePeriod)
@@ -18,8 +21,12 @@ func setKeepAlive(c net.Conn) {
 }
 
 // safeConnClose closes tcp connection safely.
-func safeConnClose(c net.Conn, err error) {
+func SafeConnClose(c net.Conn, err error) {
 	if c != nil && err != nil {
 		c.Close()
 	}
+}
+
+func SerializeSocksAddr(m *M.Metadata) socks5.Addr {
+	return socks5.SerializeAddr("", m.DstIP, m.DstPort)
 }

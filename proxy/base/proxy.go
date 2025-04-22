@@ -1,5 +1,4 @@
-// Package proxy provides implementations of proxy protocols.
-package proxy
+package base
 
 import (
 	"context"
@@ -11,7 +10,7 @@ import (
 )
 
 const (
-	tcpConnectTimeout = 5 * time.Second
+	TcpConnectTimeout = 5 * time.Second
 )
 
 var _defaultDialer Dialer = &Base{}
@@ -34,7 +33,7 @@ func SetDialer(d Dialer) {
 
 // Dial uses default Dialer to dial TCP.
 func Dial(metadata *M.Metadata) (net.Conn, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), tcpConnectTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), TcpConnectTimeout)
 	defer cancel()
 	return _defaultDialer.DialContext(ctx, metadata)
 }

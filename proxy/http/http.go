@@ -1,4 +1,4 @@
-package proxy
+package http
 
 import (
 	"bufio"
@@ -13,11 +13,14 @@ import (
 
 	"github.com/xjasonlyu/tun2socks/v2/dialer"
 	M "github.com/xjasonlyu/tun2socks/v2/metadata"
-	"github.com/xjasonlyu/tun2socks/v2/proxy/proto"
+	"github.com/xjasonlyu/tun2socks/v2/proxy"
+	"github.com/xjasonlyu/tun2socks/v2/proxy/base"
 )
 
+const Proto = "HTTP"
+
 type HTTP struct {
-	*Base
+	*base.Base
 
 	user string
 	pass string
@@ -25,10 +28,7 @@ type HTTP struct {
 
 func NewHTTP(addr, user, pass string) (*HTTP, error) {
 	return &HTTP{
-		Base: &Base{
-			addr:  addr,
-			proto: proto.HTTP,
-		},
+		Base: base.New(addr, Proto),
 		user: user,
 		pass: pass,
 	}, nil
@@ -39,10 +39,10 @@ func (h *HTTP) DialContext(ctx context.Context, metadata *M.Metadata) (c net.Con
 	if err != nil {
 		return nil, fmt.Errorf("connect to %s: %w", h.Addr(), err)
 	}
-	setKeepAlive(c)
+	base.SetKeepAlive(c)
 
 	defer func(c net.Conn) {
-		safeConnClose(c, err)
+		base.SafeConnClose(c, err)
 	}(c)
 
 	err = h.shakeHand(metadata, c)
@@ -97,4 +97,14 @@ func (h *HTTP) shakeHand(metadata *M.Metadata, rw io.ReadWriter) error {
 func basicAuth(username, password string) string {
 	auth := username + ":" + password
 	return base64.StdEncoding.EncodeToString([]byte(auth))
+}
+
+func parseHTTP(u *url.URL) (base.Proxy, error) {
+	address, username := u.Host, u.User.Username()
+	password, _ := u.User.Password()
+	return NewHTTP(address, username, password)
+}
+
+func init() {
+	proxy.RegisterProtocol(Proto, parseHTTP)
 }
