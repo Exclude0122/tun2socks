@@ -60,6 +60,10 @@ func Insert(k *Key) {
 	_engineMu.Unlock()
 }
 
+func SetProxy(proxy proxy.Proxy) {
+	_defaultProxy = proxy
+}
+
 func start() error {
 	_engineMu.Lock()
 	defer _engineMu.Unlock()
@@ -166,7 +170,7 @@ func restAPI(k *Key) error {
 }
 
 func netstack(k *Key) (err error) {
-	if k.Proxy == "" {
+	if _defaultProxy == nil && k.Proxy == "" {
 		return errors.New("empty proxy")
 	}
 	if k.Device == "" {
@@ -190,8 +194,10 @@ func netstack(k *Key) (err error) {
 		}
 	}()
 
-	if _defaultProxy, err = parseProxy(k.Proxy); err != nil {
-		return
+	if _defaultProxy == nil {
+		if _defaultProxy, err = parseProxy(k.Proxy); err != nil {
+			return
+		}
 	}
 	tunnel.T().SetDialer(_defaultProxy)
 
